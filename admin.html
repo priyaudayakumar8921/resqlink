@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resqlink - Admin Control Panel</title>
+    <!-- Tailwind CSS (Now built locally) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body class="bg-darkBg text-primary font-sans antialiased min-h-screen">
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-borderBlue px-6 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🛡️</span>
+            <div>
+                <h1 class="text-xl font-black text-primary">Resqlink Admin</h1>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Control Room Panel</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-add-camp" class="hidden px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm shadow-sm transition-colors">
+                + Add Camp
+            </button>
+            <button id="btn-logout" class="hidden px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-sm transition-colors border border-slate-200">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6">
+        
+        <!-- LOGIN SCREEN -->
+        <div id="screen-login" class="max-w-md mx-auto mt-20 bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+            <div class="text-center mb-6">
+                <span class="text-4xl block mb-2">🔐</span>
+                <h2 class="text-2xl font-black">Admin Access</h2>
+                <p class="text-slate-500 text-sm mt-1">Please enter the control room password</p>
+            </div>
+            <form id="form-login" class="space-y-4">
+                <div>
+                    <input type="password" id="input-password" required placeholder="Enter password..." class="w-full bg-slate-50 border border-slate-300 p-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-center tracking-widest">
+                </div>
+                <button type="submit" class="w-full bg-primary hover:bg-slate-800 text-white font-bold p-3 rounded-lg shadow-md transition-all active:scale-95">
+                    Authenticate
+                </button>
+            </form>
+        </div>
+
+        <!-- DASHBOARD SCREEN -->
+        <div id="screen-dashboard" class="hidden space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Reports Management -->
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-black flex items-center gap-2">
+                            <span>🚨</span> Active Emergency Reports
+                        </h2>
+                        <button id="btn-refresh-reports" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-md text-sm font-bold border border-slate-200">🔄 Refresh</button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+                                <tr>
+                                    <th class="p-3 rounded-tl-lg">Incident</th>
+                                    <th class="p-3">Location</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 rounded-tr-lg">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body" class="divide-y divide-slate-100">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Subscribers Management -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-black flex items-center gap-2">
+                            <span>📱</span> Subscribers
+                        </h2>
+                        <span id="subscriber-count" class="bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded text-xs">0 Total</span>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto max-h-[400px] pr-2 space-y-2" id="subscribers-list">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Actions</h3>
+                        <button onclick="bulkApproveSubscribers()" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex justify-center items-center gap-2">
+                            <span>✅</span> Approve All Pending
+                        </button>
+                        <button id="btn-open-broadcast" class="w-full py-2 bg-brand hover:bg-red-600 text-white font-bold rounded-lg text-sm shadow-sm transition-colors flex justify-center items-center gap-2">
+                            <span>📢</span> Dispatch SMS Alert
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volunteers & Chat -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <!-- Volunteers Management -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-black flex items-center gap-2">
+                            <span>🤝</span> Registered Volunteers
+                        </h2>
+                        <span id="volunteer-count" class="bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded text-xs">0 Total</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto max-h-[400px] pr-2 space-y-3" id="volunteers-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Live SOS Chat Panel -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-black flex items-center gap-2">
+                            <span>🆘</span> Live SOS Broadcasts
+                        </h2>
+                        <span class="bg-red-100 text-red-700 font-bold px-2 py-1 rounded text-xs animate-pulse">Monitoring</span>
+                    </div>
+                    <div id="admin-chat-history" class="flex-1 overflow-y-auto h-[300px] bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3 mb-4">
+                        <div class="text-center text-[10px] text-slate-400 font-bold uppercase my-2">Control Room Connected</div>
+                    </div>
+                    <form id="admin-chat-form" class="flex gap-2">
+                        <input type="text" id="admin-chat-input" required placeholder="Type reply as Control Room..." class="flex-1 bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-brand">
+                        <button type="submit" class="bg-brand hover:bg-brandHover text-white font-bold px-4 py-2 rounded-lg transition-colors">Send</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- SMS Broadcast Modal -->
+    <div id="modal-broadcast" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div class="bg-brand p-4 flex justify-between items-center text-white">
+                <h3 class="font-black flex items-center gap-2"><span>📢</span> Emergency SMS Broadcast</h3>
+                <button id="btn-close-broadcast" class="text-white/80 hover:text-white transition-colors">✖</button>
+            </div>
+            <div class="p-6">
+                <form id="form-broadcast" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Target District</label>
+                        <select id="select-broadcast-district" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 outline-none focus:border-brand">
+                            <option value="All">All Districts</option>
+                            <option value="Wayanad">Wayanad</option><option value="Idukki">Idukki</option><option value="Ernakulam">Ernakulam</option>
+                            <option value="Thrissur">Thrissur</option><option value="Palakkad">Palakkad</option><option value="Malappuram">Malappuram</option>
+                            <option value="Kozhikode">Kozhikode</option><option value="Kannur">Kannur</option><option value="Kasaragod">Kasaragod</option>
+                            <option value="Kottayam">Kottayam</option><option value="Alappuzha">Alappuzha</option><option value="Pathanamthitta">Pathanamthitta</option>
+                            <option value="Kollam">Kollam</option><option value="Thiruvananthapuram">Thiruvananthapuram</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Alert Message</label>
+                        <textarea id="input-broadcast-msg" rows="3" required placeholder="Type the emergency warning here..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 outline-none focus:border-brand"></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-brand hover:bg-red-600 text-white font-bold rounded-lg shadow-md transition-all active:scale-95">
+                        Send Alerts
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Camp Modal -->
+    <div id="modal-add-camp" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-black flex items-center gap-2"><span>⛺</span> Setup Relief Camp</h3>
+                <button id="btn-close-camp" class="text-white/80 hover:text-white transition-colors text-lg font-bold">✕</button>
+            </div>
+            <div class="p-6">
+                <form id="form-add-camp" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Camp Name</label>
+                            <input type="text" id="camp-name" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">District</label>
+                            <select id="camp-district" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                                <option value="Wayanad">Wayanad</option><option value="Idukki">Idukki</option><option value="Ernakulam">Ernakulam</option>
+                                <option value="Malappuram">Malappuram</option><option value="Kozhikode">Kozhikode</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Total Capacity</label>
+                            <input type="number" id="camp-capacity" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Facilities</label>
+                            <input type="text" id="camp-facilities" placeholder="e.g. Food, Medic, Beds" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Coordinator Contact</label>
+                            <input type="text" id="camp-contact" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Latitude</label>
+                            <input type="number" step="any" id="camp-lat" required placeholder="11.605" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Longitude</label>
+                            <input type="number" step="any" id="camp-lng" required placeholder="76.083" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 outline-none focus:border-indigo-600">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-all active:scale-95 mt-4">
+                        Register Camp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/admin.js"></script>
+</body>
+</html>

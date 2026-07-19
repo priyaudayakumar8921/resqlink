@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Resqlink - Kerala Emergency Resilience Net</title>
+    <!-- Tailwind CSS (Now built locally) -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body class="bg-darkBg text-textMain flex flex-col min-h-screen select-none font-sans overflow-x-hidden antialiased pb-16 md:pb-0">
+
+    <!-- Floating Toast Notifications Container -->
+    <div id="toast-container"
+        class="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-sm px-4 flex flex-col gap-2 pointer-events-none">
+    </div>
+
+    <!-- Top Global Header -->
+    <header class="sticky top-0 z-40 bg-white border-b border-borderBlue px-4 py-3 flex items-center justify-between shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+        <div class="flex items-center gap-2">
+            <div class="p-2 bg-primary rounded-2xl text-white shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+                <!-- Shield Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-tight text-primary flex items-center gap-1.5">
+                    <span id="header-title">Resqlink</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                </h1>
+                <p id="header-motto" class="text-[9px] text-textMuted font-bold tracking-wide uppercase hidden sm:block">
+                    Kerala Emergency Resilience Net
+                </p>
+            </div>
+        </div>
+
+        <!-- Toolbar controls -->
+        <div class="flex items-center gap-2">
+            <!-- Connectivity Toggle Button -->
+            <button id="btn-network-toggle" class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all bg-emerald-50 text-emerald-600 border border-emerald-200">
+                <span id="network-icon">⚡</span>
+                <span id="network-status-text">Online</span>
+            </button>
+
+            <!-- Language Switcher -->
+            <button id="btn-lang-toggle" class="px-3 py-1.5 bg-slate-100 text-textMain rounded-2xl text-xs font-bold hover:bg-slate-200 border border-slate-200 transition-colors">
+                മലയാളം
+            </button>
+
+            <!-- System Info Button -->
+            <button id="btn-info-modal" class="p-1.5 bg-slate-100 text-textMuted rounded-2xl hover:bg-slate-200 border border-slate-200 transition-colors">
+                ℹ️
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container Split Workspace -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto w-full">
+
+        <!-- Left Work Area -->
+        <div class="flex-1 flex flex-col p-4 space-y-4 overflow-y-auto max-h-full">
+
+            <!-- ================= SCREEN 1: DASHBOARD ================= -->
+            <div id="screen-dashboard" class="space-y-4">
+
+                <!-- Weather Alerts Ticker -->
+                <div id="weather-ticker-container" class="hidden bg-slate-800 text-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(56,25,50,0.06)] flex items-center">
+                    <div class="bg-brand text-white px-3 py-2 text-xs font-black uppercase shrink-0 z-10 flex items-center gap-1 shadow-[4px_0_10px_rgba(0,0,0,0.2)] relative">
+                        <span>⚠️</span> IMD Alerts
+                    </div>
+                    <div class="overflow-hidden whitespace-nowrap flex-1 py-2 text-xs font-bold pl-2">
+                        <div id="weather-ticker-text" class="inline-block" style="animation: scroll 20s linear infinite;">
+                            <!-- Alerts populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Numerical Stats Counters -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-cardBg border border-borderBlue rounded-3xl p-3 text-center flex flex-col justify-between shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+                        <span class="text-[9px] text-textMuted font-bold uppercase tracking-wider block" id="lbl-stat-total">TOTAL REPORTS</span>
+                        <span id="stat-total-val" class="text-2xl font-black text-textMain block mt-1">...</span>
+                        <span id="stat-offline-badge" class="text-[9px] text-amber-500 block font-medium hidden">(0 pending sync)</span>
+                    </div>
+
+                    <div class="bg-cardBg border border-borderBlue rounded-3xl p-3 text-center flex flex-col justify-between shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+                        <span class="text-[9px] text-textMuted font-bold uppercase tracking-wider block" id="lbl-stat-alerts">CONFIRMED ALERTS</span>
+                        <span id="stat-confirmed-val" class="text-2xl font-black text-brand block mt-1">...</span>
+                        <span class="text-[8px] text-brand block font-semibold uppercase" id="lbl-stat-verified">Verified Live</span>
+                    </div>
+
+                    <div class="bg-cardBg border border-borderBlue rounded-3xl p-3 text-center flex flex-col justify-between shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+                        <span class="text-[9px] text-textMuted font-bold uppercase tracking-wider block" id="lbl-stat-subscribers">SUBSCRIBERS</span>
+                        <span id="stat-subscribers-val" class="text-2xl font-black text-primary block mt-1">...</span>
+                        <span class="text-[8px] text-primary block font-semibold uppercase" id="lbl-stat-broadcast">Broadcast Net</span>
+                    </div>
+                </div>
+
+                <!-- Emergency Helplines (Moved here for mobile visibility) -->
+                <div class="bg-cardBg border border-borderBlue rounded-3xl p-4 shadow-[0_8px_30px_rgb(56,25,50,0.06)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-3xl">📞</span>
+                        <div>
+                            <h3 class="font-black text-textMain">Emergency Helplines</h3>
+                            <p class="text-[10px] text-textMuted uppercase tracking-wide font-bold">Available 24/7 across Kerala</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 sm:gap-6 text-sm">
+                        <div class="flex flex-col"><span class="text-[10px] font-bold text-textMuted uppercase tracking-wider">State Helpline</span> <span class="font-black text-primary text-lg">1070</span></div>
+                        <div class="flex flex-col"><span class="text-[10px] font-bold text-textMuted uppercase tracking-wider">Control Room</span> <span class="font-black text-primary text-lg">1077</span></div>
+                        <div class="flex flex-col"><span class="text-[10px] font-bold text-brand uppercase tracking-wider">Emergency</span> <span class="font-black text-brand text-lg">112</span></div>
+                    </div>
+                </div>
+
+                <!-- Major System Action Buttons (Hidden on Mobile, handled by Bottom Nav) -->
+                <div class="hidden md:grid grid-cols-4 gap-3">
+                    <button onclick="navigateTo('screen-report')" class="bg-brand hover:bg-brandHover text-white py-4 px-4 rounded-3xl font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-red-500/30 transition-transform active:scale-95">
+                        <span>🚨</span>
+                        <span class="text-sm tracking-wide" id="btn-lbl-report">Report Incident</span>
+                    </button>
+
+                    <button onclick="navigateTo('screen-alerts')" class="bg-amber-400 hover:bg-amber-500 text-amber-950 border border-amber-500 py-4 px-4 rounded-3xl font-black flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/30 transition-transform active:scale-95">
+                        <span class="animate-bounce">🔔</span>
+                        <span class="text-sm tracking-wide" id="btn-lbl-alerts">Get Alerts</span>
+                    </button>
+
+                    <button onclick="navigateTo('screen-resources')" class="bg-indigo-600 hover:bg-indigo-700 text-white py-4 px-4 rounded-3xl font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-indigo-500/30 transition-transform active:scale-95">
+                        <span class="animate-pulse">📦</span>
+                        <span class="text-sm tracking-wide" id="btn-lbl-resources">Supply Board</span>
+                    </button>
+
+                    <button onclick="navigateTo('screen-volunteer')" class="bg-emerald-600 hover:bg-emerald-700 text-white py-4 px-4 rounded-3xl font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/30 transition-transform active:scale-95">
+                        <span>🤝</span>
+                        <span class="text-sm tracking-wide" id="btn-lbl-volunteer">Volunteer Hub</span>
+                    </button>
+                </div>
+
+                <!-- Leaflet Map Container -->
+                <div class="bg-cardBg border border-borderBlue rounded-3xl overflow-hidden flex flex-col relative h-[400px] shadow-[0_8px_30px_rgb(56,25,50,0.06)] z-10">
+                    <div id="map-canvas-container" class="flex-1 w-full h-full z-0"></div>
+                    
+                    <div class="absolute top-3 right-3 z-[400] bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-borderBlue text-xs shadow-[0_8px_30px_rgb(56,25,50,0.06)] pointer-events-none">
+                        <div class="text-[9px] text-textMuted font-bold uppercase tracking-wide" id="lbl-focus-title">Tactical Center</div>
+                        <div id="focused-district-name" class="font-extrabold text-primary mt-0.5">Kerala State</div>
+                    </div>
+                </div>
+
+                <!-- Recent emergency feeds section -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 id="lbl-feeds-title" class="text-xs font-bold text-textMuted tracking-wider uppercase">Recent Emergency Feeds</h3>
+                        <span id="lbl-active-count-badge" class="bg-blue-50 text-[10px] text-primary px-2.5 py-0.5 rounded-full font-bold border border-blue-200">Loading...</span>
+                    </div>
+
+                    <div id="live-feeds-list" class="space-y-3">
+                        <!-- Feed items dynamically injected -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================= SCREEN 2: REPORT INCIDENT WIZARD ================= -->
+            <div id="screen-report" class="bg-cardBg border border-borderBlue rounded-3xl p-4 space-y-4 shadow-[0_8px_30px_rgb(56,25,50,0.06)] hidden">
+
+                <div class="flex items-center justify-between">
+                    <h2 class="font-black text-lg text-textMain" id="lbl-report-head">Report Emergency</h2>
+                    <div class="flex items-center gap-3">
+                        <div id="badge-wizard-network" class="bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs px-2.5 py-0.5 rounded-full font-bold">Online</div>
+                        <button onclick="navigateTo('screen-dashboard')" class="text-slate-400 hover:text-slate-700 font-bold text-xl leading-none">×</button>
+                    </div>
+                </div>
+
+                <!-- Wizard Stepper Indicator -->
+                <div class="flex items-center justify-between px-6 pt-2 pb-4">
+                    <div class="flex items-center flex-1">
+                        <div id="step-indicator-1" class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-primary text-white ring-4 ring-blue-100 transition-all">1</div>
+                        <div id="step-line-1" class="flex-1 h-1 mx-2 bg-slate-200 transition-colors"></div>
+                    </div>
+                    <div class="flex items-center flex-1">
+                        <div id="step-indicator-2" class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-slate-100 text-textMuted transition-all border border-slate-300">2</div>
+                        <div id="step-line-2" class="flex-1 h-1 mx-2 bg-slate-200 transition-colors"></div>
+                    </div>
+                    <div class="flex items-center">
+                        <div id="step-indicator-3" class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-slate-100 text-textMuted transition-all border border-slate-300">3</div>
+                    </div>
+                </div>
+
+                <!-- STEP 1 -->
+                <div id="report-step-1" class="space-y-4">
+                    <h3 id="lbl-step-1-title" class="text-sm font-bold text-textMain tracking-wider text-center uppercase">1. Select Incident Type</h3>
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button class="incident-card-btn p-3 rounded-3xl border border-borderBlue bg-slate-50 text-left flex flex-col justify-between h-28 transition-all" data-value="Flood">
+                            <span class="text-xl block mb-2">🌊</span>
+                            <div><div class="font-bold text-sm text-textMain" id="lbl-inc-flood">Flood</div></div>
+                        </button>
+                        <button class="incident-card-btn p-3 rounded-3xl border border-borderBlue bg-slate-50 text-left flex flex-col justify-between h-28 transition-all" data-value="Landslide">
+                            <span class="text-xl block mb-2">⚠️</span>
+                            <div><div class="font-bold text-sm text-textMain" id="lbl-inc-landslide">Landslide</div></div>
+                        </button>
+                        <button class="incident-card-btn p-3 rounded-3xl border border-borderBlue bg-slate-50 text-left flex flex-col justify-between h-28 transition-all" data-value="Road Block">
+                            <span class="text-xl block mb-2">🚧</span>
+                            <div><div class="font-bold text-sm text-textMain" id="lbl-inc-roadblock">Road Block</div></div>
+                        </button>
+                        <button class="incident-card-btn p-3 rounded-3xl border border-borderBlue bg-slate-50 text-left flex flex-col justify-between h-28 transition-all" data-value="Rescue Needed">
+                            <span class="text-xl block mb-2">🆘</span>
+                            <div><div class="font-bold text-sm text-textMain" id="lbl-inc-rescue">Rescue Needed</div></div>
+                        </button>
+                    </div>
+                    <button id="btn-step1-next" class="w-full py-3.5 mt-4 bg-primary text-white font-bold rounded-3xl text-sm transition-transform active:scale-95 shadow-md shadow-blue-500/30">Next Step</button>
+                </div>
+
+                <!-- STEP 2 -->
+                <div id="report-step-2" class="space-y-4 hidden">
+                    <h3 id="lbl-step-2-title" class="text-sm font-bold text-textMain tracking-wider text-center uppercase">2. Confirm Location</h3>
+                    <div class="bg-slate-50 p-4 rounded-3xl border border-borderBlue space-y-4">
+                        <button id="btn-trigger-gps" class="w-full py-3 bg-white border border-borderBlue hover:bg-slate-50 text-primary font-bold rounded-3xl text-xs flex items-center justify-center gap-2 shadow-[0_8px_30px_rgb(56,25,50,0.06)] transition-colors">
+                            📍 <span id="lbl-share-gps">Fetch Current GPS Location</span>
+                        </button>
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <label id="lbl-coords" class="text-textMain font-bold block mb-1">Coordinates</label>
+                                <input id="input-coords" type="text" placeholder="e.g. 11.60500, 76.08800" class="w-full bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label id="lbl-district" class="text-textMain font-bold block mb-1">District</label>
+                                    <select id="select-coords-district" class="w-full bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none">
+                                        <option value="">-- Choose --</option>
+                                        <!-- Populated by JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label id="lbl-village" class="text-textMain font-bold block mb-1">Village/Area</label>
+                                    <input id="input-coords-village" type="text" placeholder="e.g. Meppadi" class="w-full bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button id="btn-step2-back" class="flex-1 py-3.5 bg-slate-200 text-slate-700 font-bold rounded-3xl text-sm">Back</button>
+                        <button id="btn-step2-next" class="flex-[2] py-3.5 bg-primary text-white font-bold rounded-3xl text-sm shadow-md shadow-blue-500/30">Next Step</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div id="report-step-3" class="space-y-4 hidden">
+                    <h3 id="lbl-step-3-title" class="text-sm font-bold text-textMain tracking-wider text-center uppercase">3. Details & Submit</h3>
+                    <div class="space-y-3">
+                        <label id="lbl-attach" class="text-textMain text-xs font-bold block">Attach Photo Evidence</label>
+                        <div class="border-2 border-dashed border-slate-300 rounded-3xl p-2 text-center bg-slate-50 relative overflow-hidden transition-colors min-h-[160px] flex items-center justify-center" id="camera-wrapper">
+                            <div id="upload-prompt-view" class="space-y-2 cursor-pointer w-full py-8">
+                                <span class="text-3xl block">📷</span>
+                                <span id="lbl-tap-upload" class="text-xs font-bold text-primary block">Tap to Open Camera</span>
+                            </div>
+                            <div id="live-camera-view" class="hidden relative w-full h-48 rounded-2xl overflow-hidden bg-black">
+                                <video id="camera-video-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+                                <button type="button" id="btn-capture-photo" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white text-primary font-black px-6 py-2 rounded-full shadow-2xl z-10 active:scale-95 transition-transform border-2 border-slate-200">Snap Photo</button>
+                            </div>
+                            <div id="upload-preview-view" class="hidden relative w-full h-48 rounded-2xl overflow-hidden">
+                                <img id="attached-preview-img" src="" class="w-full h-full object-cover">
+                                <button type="button" id="btn-remove-photo" class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg z-10">✕</button>
+                            </div>
+                            <canvas id="camera-canvas" class="hidden"></canvas>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label id="lbl-incident-details" class="text-textMain text-xs font-bold block">Incident specifics</label>
+                        <textarea id="textarea-details" rows="3" placeholder="Describe the situation..." class="w-full bg-white border border-slate-300 rounded-3xl p-3 text-textMain text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"></textarea>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button id="btn-step3-back" class="flex-1 py-3.5 bg-slate-200 text-slate-700 font-bold rounded-3xl text-sm">Back</button>
+                        <button id="btn-step3-submit" class="flex-[2] py-3.5 bg-brand text-white font-extrabold rounded-3xl text-sm shadow-lg shadow-red-500/40">Submit Report</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= SCREEN 3: ALERTS SUBSCRIPTION ================= -->
+            <div id="screen-alerts" class="bg-cardBg border border-borderBlue rounded-3xl p-4 space-y-4 shadow-[0_8px_30px_rgb(56,25,50,0.06)] hidden relative">
+                <button onclick="navigateTo('screen-dashboard')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-xl leading-none">×</button>
+                <div class="text-center space-y-2 mt-2">
+                    <span class="text-4xl">📱</span>
+                    <h3 id="lbl-alert-network-title" class="text-lg font-black text-textMain">Alert Network</h3>
+                    <p id="lbl-alert-network-desc" class="text-xs text-textMuted">Subscribe to receive severe weather alerts and offline WhatsApp updates for your district.</p>
+                    <p class="text-[10px] text-amber-600 bg-amber-50 p-2 rounded border border-amber-200 mt-2 font-semibold">Note: Because we are using the free Sandbox, you must text "join &lt;sandbox-word&gt;" to the Twilio WhatsApp number to activate your number!</p>
+                </div>
+
+                <form id="alerts-subscription-form" class="space-y-4 pt-4 border-t border-slate-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <label class="text-textMain font-bold block mb-1.5">Phone Number</label>
+                            <input type="tel" id="input-subscription-phone" required placeholder="e.g. 9876543210" class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="text-textMain font-bold block mb-1.5">Select District</label>
+                            <select id="select-subscription-district" required class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-primary hover:bg-blue-700 text-white font-bold rounded-3xl shadow-md shadow-blue-500/30 flex items-center justify-center gap-2">
+                        <span>🔔</span> Subscribe to Alerts
+                    </button>
+                </form>
+
+                <div class="pt-6">
+                    <h4 class="text-xs font-bold text-textMuted uppercase tracking-wide mb-3">Live WhatsApp Logs</h4>
+                    <div id="live-sms-logs-container" class="space-y-2 max-h-48 overflow-y-auto pr-1 no-scrollbar"></div>
+                </div>
+            </div>
+
+            <!-- ================= SCREEN 4: RESOURCES BOARD ================= -->
+            <div id="screen-resources" class="bg-cardBg border border-borderBlue rounded-3xl p-4 space-y-4 shadow-[0_8px_30px_rgb(56,25,50,0.06)] hidden relative">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-black text-lg text-textMain" id="lbl-resources-head">Supply Board</h2>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs px-2.5 py-0.5 rounded-full font-bold">Needs & Donors</span>
+                        <button onclick="navigateTo('screen-dashboard')" class="text-slate-400 hover:text-slate-700 font-bold text-xl leading-none">×</button>
+                    </div>
+                </div>
+
+                <!-- Request Form -->
+                <div class="bg-slate-50 p-4 rounded-3xl border border-borderBlue space-y-3">
+                    <h3 class="text-xs font-bold text-textMuted uppercase tracking-wide">Request Supplies</h3>
+                    <form id="resource-request-form" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <select id="res-intent" required class="bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none">
+                            <option value="">-- I want to --</option>
+                            <option value="Need">Request Supplies</option>
+                            <option value="Donate">Donate Supplies</option>
+                        </select>
+                        <select id="res-type" required class="bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none">
+                            <option value="">-- Resource Type --</option>
+                            <option value="Food">Food</option>
+                            <option value="Medicine">Medicine</option>
+                            <option value="Blankets">Blankets</option>
+                            <option value="Water">Water</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input id="res-quantity" type="text" required placeholder="Quantity (e.g., for 5 people)" class="bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none">
+                        <input id="res-location" type="text" required placeholder="Location / Address" class="bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none md:col-span-2">
+                        <input id="res-contact" type="text" required placeholder="Contact Number" class="bg-white border border-slate-300 rounded-2xl p-2.5 text-textMain focus:border-primary outline-none">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl px-4 py-2 shadow-md shadow-indigo-500/30">Submit Request</button>
+                    </form>
+                </div>
+
+                <!-- Active Requests List -->
+                <div>
+                    <h3 class="text-xs font-bold text-textMuted uppercase tracking-wide mb-3">Active Requests</h3>
+                    <div id="resources-list" class="space-y-3 max-h-96 overflow-y-auto pr-1 no-scrollbar">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= SCREEN 5: VOLUNTEER REGISTRATION ================= -->
+            <div id="screen-volunteer" class="bg-cardBg border border-borderBlue rounded-3xl p-4 space-y-4 shadow-[0_8px_30px_rgb(56,25,50,0.06)] hidden relative">
+                <button onclick="navigateTo('screen-dashboard')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-xl leading-none">×</button>
+                <div class="text-center space-y-2 mt-2">
+                    <span class="text-4xl">🤝</span>
+                    <h3 class="text-lg font-black text-textMain">Volunteer Registration</h3>
+                    <p class="text-xs text-textMuted">Join the resilience network. Register your skills and equipment to help during emergencies.</p>
+                </div>
+
+                <form id="volunteer-registration-form" class="space-y-4 pt-4 border-t border-slate-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <label class="text-textMain font-bold block mb-1.5">Full Name</label>
+                            <input type="text" id="vol-name" required placeholder="e.g. John Doe" class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="text-textMain font-bold block mb-1.5">Phone Number</label>
+                            <input type="text" id="vol-phone" required placeholder="e.g. +91 9876543210" class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                        </div>
+                        <div>
+                            <label class="text-textMain font-bold block mb-1.5">District</label>
+                            <select id="vol-district" required class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                                <option value="">-- Choose --</option>
+                                <option value="Wayanad">Wayanad</option><option value="Idukki">Idukki</option><option value="Ernakulam">Ernakulam</option>
+                                <option value="Thrissur">Thrissur</option><option value="Palakkad">Palakkad</option><option value="Malappuram">Malappuram</option>
+                                <option value="Kozhikode">Kozhikode</option><option value="Kannur">Kannur</option><option value="Kasaragod">Kasaragod</option>
+                                <option value="Kottayam">Kottayam</option><option value="Alappuzha">Alappuzha</option><option value="Pathanamthitta">Pathanamthitta</option>
+                                <option value="Kollam">Kollam</option><option value="Thiruvananthapuram">Thiruvananthapuram</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-textMain font-bold block mb-1.5">Skills (Comma separated)</label>
+                            <input type="text" id="vol-skills" placeholder="e.g. Medical, Swimmer, Driver" class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-textMain font-bold block mb-1.5">Equipment Owned</label>
+                            <input type="text" id="vol-equipment" placeholder="e.g. 4x4 Vehicle, Boat, Chainsaw" class="w-full bg-slate-50 border border-slate-300 rounded-3xl p-3 text-textMain focus:border-primary outline-none">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-3xl shadow-md shadow-emerald-500/30 flex items-center justify-center gap-2">
+                        Register as Volunteer
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Right Sidebar (Watchlist) -->
+        <div class="hidden md:flex w-[320px] lg:w-[360px] border-l border-borderBlue p-4 flex-col space-y-4 bg-white z-20">
+            <div class="bg-blue-50 border border-blue-100 rounded-3xl p-4 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📻</span>
+                    <div>
+                        <h4 id="lbl-radio-title" class="text-sm font-bold text-primary">Radio Broadcast</h4>
+                        <p id="lbl-radio-desc" class="text-[10px] text-blue-700">Advisories in Malayalam & English</p>
+                    </div>
+                </div>
+                <button id="btn-voice-toggle" class="w-full py-2 bg-white text-primary text-xs font-bold rounded-2xl border border-blue-200 hover:bg-blue-100 transition-colors">Play Live Forecast</button>
+            </div>
+            
+            <div class="flex-1 bg-white border border-borderBlue rounded-3xl p-3 flex flex-col shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+                <h4 class="text-xs font-bold text-textMuted tracking-wider mb-3 uppercase">District Watchlist</h4>
+                <div id="watchlist-items-list" class="space-y-2 flex-1 overflow-y-auto no-scrollbar"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation Bar for Mobile -->
+    <nav class="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-borderBlue flex justify-around items-center p-2 z-50 shadow-[0_8px_30px_rgb(56,25,50,0.2)] rounded-[32px]">
+        <button class="nav-btn w-full py-2 flex flex-col items-center text-primary" data-target="screen-dashboard">
+            <svg class="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button class="nav-btn w-full py-2 flex flex-col items-center text-textMuted hover:text-primary transition-colors" data-target="screen-report">
+            <svg class="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <span class="text-[10px] font-bold">Report</span>
+        </button>
+        <button class="nav-btn w-full py-2 flex flex-col items-center text-textMuted hover:text-primary transition-colors" data-target="screen-alerts">
+            <svg class="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            <span class="text-[10px] font-bold">Alerts</span>
+        </button>
+        <button class="nav-btn w-full py-2 flex flex-col items-center text-textMuted hover:text-primary transition-colors" data-target="screen-resources">
+            <svg class="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            <span class="text-[10px] font-bold">Supplies</span>
+        </button>
+        <button class="nav-btn w-full py-2 flex flex-col items-center text-textMuted hover:text-primary transition-colors" data-target="screen-volunteer">
+            <span class="text-xl mb-0.5">🤝</span>
+            <span class="text-[10px] font-bold">Volunteer</span>
+        </button>
+    </nav>
+
+    <!-- Info Modal -->
+    <div id="info-modal-backdrop" class="fixed inset-0 bg-slate-900/40 z-[999] flex items-center justify-center p-4 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative animate-slide-in">
+            <button id="btn-close-modal" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-1">✕</button>
+            <div class="p-6 text-center space-y-3">
+                <span class="text-4xl block">🛡️</span>
+                <h3 class="text-xl font-black text-textMain">About Resqlink Rescue System</h3>
+                <p class="text-xs text-textMuted leading-relaxed text-left">Resqlink is a low-bandwidth, crisis-resilient reporting application developed for Kerala districts. Built to operate gracefully over highly congested or completely offline networks.</p>
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-left text-[10px] space-y-1 mt-4">
+                    <div class="flex justify-between"><span class="text-slate-500 font-semibold">Network Condition</span><span class="text-emerald-600 font-bold">2G / GPRS & SMS Fallback</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 font-semibold">Client Compression</span><span class="text-primary font-bold">LZ-Compressed Vector</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 font-semibold">Offline Buffer</span><span class="text-amber-600 font-bold">IndexedDB Sync Queue</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating SOS Button -->
+    <button id="btn-open-sos" class="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 bg-brand hover:bg-brandHover text-white rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform hover:scale-110 animate-bounce group">
+        <span class="text-2xl font-black">SOS</span>
+        <span class="absolute -top-10 right-0 bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">Live Help</span>
+    </button>
+
+    <!-- SOS Chat Modal -->
+    <div id="sos-chat-modal" class="fixed inset-0 md:inset-auto md:bottom-24 md:right-6 md:w-80 md:h-[400px] bg-white md:rounded-2xl z-[999] shadow-2xl flex flex-col hidden overflow-hidden border border-slate-200">
+        <div class="bg-brand p-3 flex justify-between items-center text-white shrink-0 shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+            <h3 class="font-black flex items-center gap-2"><span>🆘</span> Live Rescue Chat</h3>
+            <button id="btn-close-sos" class="text-white/80 hover:text-white text-lg font-bold">✕</button>
+        </div>
+        <div id="sos-chat-history" class="flex-1 p-3 overflow-y-auto bg-slate-50 space-y-3">
+            <div class="text-center text-[10px] text-slate-400 font-bold uppercase my-2">Connected to Control Room</div>
+            <!-- Chat messages injected here -->
+        </div>
+        <form id="sos-chat-form" class="p-2 bg-white border-t border-slate-200 flex gap-2 shrink-0">
+            <input type="text" id="sos-chat-input" required placeholder="Type message..." class="flex-1 bg-slate-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand">
+            <button type="submit" class="bg-brand text-white w-10 h-10 rounded-full flex items-center justify-center shadow hover:bg-brandHover transition-colors">➤</button>
+        </form>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+
+</body>
+
+</html>
