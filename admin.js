@@ -1,3 +1,4 @@
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://resqlink-backend-apyp.onrender.com';
 import './style.css';
 
 let adminToken = sessionStorage.getItem('resqlink_admin_token');
@@ -40,7 +41,7 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
     const pwd = document.getElementById('input-password').value;
     
     try {
-        const res = await fetch('/api/admin/login', {
+        const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password: pwd })
@@ -81,7 +82,7 @@ document.getElementById('btn-refresh-reports').addEventListener('click', () => {
 // Fetch and Render Reports
 async function fetchReports() {
     try {
-        const res = await fetch('/api/reports');
+        const res = await fetch(`${API_BASE_URL}/api/reports`);
         if (res.ok) {
             const data = await res.json();
             renderReports(data);
@@ -133,7 +134,7 @@ function renderReports(reports) {
 // Fetch and Render Subscribers
 async function fetchSubscribers() {
     try {
-        const res = await fetch('/api/subscribers');
+        const res = await fetch(`${API_BASE_URL}/api/subscribers`);
         if (res.ok) {
             const data = await res.json();
             document.getElementById('subscriber-count').textContent = `${data.length} Total`;
@@ -165,7 +166,7 @@ async function fetchSubscribers() {
 // Fetch and Render Volunteers
 async function fetchVolunteers() {
     try {
-        const res = await fetch('/api/volunteers');
+        const res = await fetch(`${API_BASE_URL}/api/volunteers`);
         if (res.ok) {
             const data = await res.json();
             document.getElementById('volunteer-count').textContent = `${data.length} Total`;
@@ -286,7 +287,7 @@ document.getElementById('form-broadcast').addEventListener('submit', async (e) =
     const message = document.getElementById('input-broadcast-msg').value;
 
     try {
-        const res = await fetch('/api/subscribers/broadcast', {
+        const res = await fetch(`${API_BASE_URL}/api/subscribers/broadcast`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ district, message })
@@ -326,7 +327,7 @@ document.getElementById('form-add-camp').addEventListener('submit', async (e) =>
     };
 
     try {
-        const res = await fetch('/api/camps', {
+        const res = await fetch(`${API_BASE_URL}/api/camps`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(campData)

@@ -1,3 +1,4 @@
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://resqlink-backend-apyp.onrender.com';
 import './style.css';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -189,11 +190,11 @@ window.onload = async function () {
 
     try {
         const [statsRes, feedsRes, resourcesRes, weatherRes, campsRes] = await Promise.all([
-            fetch('/api/stats'),
-            fetch('/api/reports'),
-            fetch('/api/resources'),
-            fetch('/api/weather-alerts'),
-            fetch('/api/camps')
+            fetch(`${API_BASE_URL}/api/stats`),
+            fetch(`${API_BASE_URL}/api/reports`),
+            fetch(`${API_BASE_URL}/api/resources`),
+            fetch(`${API_BASE_URL}/api/weather-alerts`),
+            fetch(`${API_BASE_URL}/api/camps`)
         ]);
         
         if (statsRes.ok) stats = await statsRes.json();
@@ -601,7 +602,7 @@ function attachEventHandlers() {
             if (offlineQueue.length > 0) {
                 setTimeout(async () => {
                     try {
-                        const res = await fetch('/api/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offlineQueue) });
+                        const res = await fetch(`${API_BASE_URL}/api/reports`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offlineQueue) });
                         if (res.ok) {
                             const json = await res.json();
                             feeds = [...json.data, ...feeds];
@@ -772,7 +773,7 @@ function attachEventHandlers() {
 
         if (isOnline) {
             try {
-                const res = await fetch('/api/reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(rep) });
+                const res = await fetch(`${API_BASE_URL}/api/reports`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(rep) });
                 if(res.ok) {
                     const data = await res.json();
                     rep.id = data.data._id;
@@ -856,7 +857,7 @@ function attachEventHandlers() {
             const contact = document.getElementById('res-contact').value;
 
             try {
-                const res = await fetch('/api/resources', {
+                const res = await fetch(`${API_BASE_URL}/api/resources`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ intent, type, quantity, location, contact })
@@ -888,7 +889,7 @@ function attachEventHandlers() {
             const equipment = document.getElementById('vol-equipment').value;
 
             try {
-                const res = await fetch('/api/volunteers', {
+                const res = await fetch(`${API_BASE_URL}/api/volunteers`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, phone, district, skills, equipment })
@@ -939,7 +940,10 @@ function attachEventHandlers() {
             
             // Connect socket if not already connected
             if (!sosSocket) {
-                sosSocket = io('http://localhost:5000');
+                const backendUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:5000' 
+                    : 'https://resqlink-backend-apyp.onrender.com';
+                sosSocket = io(backendUrl);
                 
                 sosSocket.on('connect', () => {
                     console.log("Connected to SOS Room");
