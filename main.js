@@ -1006,3 +1006,11 @@ function attachEventHandlers() {
     document.getElementById('btn-info-modal').addEventListener('click', () => document.getElementById('info-modal-backdrop').classList.remove('hidden'));
     document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('info-modal-backdrop').classList.add('hidden'));
 }
+
+// Mobile Bottom Navigation logic
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        if (target && window.navigateTo) window.navigateTo(target);
+    });
+});
