@@ -994,9 +994,7 @@ function attachEventHandlers() {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
                     sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: loc });
-                }, () => {
-                    sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: 'Location Denied' });
-                }, { timeout: 5000 });
+                }, (err) => { let errMsg = 'Location Denied'; if(err.code === 3) errMsg = 'Location Timeout (Took too long)'; if(err.code === 2) errMsg = 'Location Unavailable (No GPS signal)'; sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: errMsg }); }, { timeout: 15000, maximumAge: 10000 });
             } else {
                 sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: 'Location Unsupported' });
             }
