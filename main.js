@@ -468,7 +468,7 @@ function renderWatchlist() {
 window.fulfillResource = async function(id) {
     if(!confirm('Are you sure you want to mark this request as fulfilled?')) return;
     try {
-        const res = await fetch(`/api/resources/${id}/fulfill`, { method: 'PATCH' });
+        const res = await fetch(`${API_BASE_URL}/api/resources/${id}/fulfill`, { method: 'PATCH' });
         if(res.ok) {
             showToast('Request fulfilled successfully!', 'success');
             const updated = await res.json();
@@ -822,7 +822,7 @@ function attachEventHandlers() {
 
             const district = document.getElementById('select-subscription-district').value;
             const phone = document.getElementById('input-subscription-phone').value;
-            const res = await fetch(`${API_BASE}/subscribe`, {
+            const res = await fetch(`${API_BASE_URL}/api/subscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fcmToken, phone, district })
