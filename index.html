@@ -15,7 +15,7 @@
 
     <!-- Floating Toast Notifications Container -->
     <div id="toast-container"
-        class="fixed bottom-24 md:bottom-auto md:top-24 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-sm px-4 flex flex-col gap-2 pointer-events-none">
+        class="fixed bottom-24 md:bottom-auto md:top-24 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto z-[9999] md:w-full max-w-sm mx-auto flex flex-col gap-2 pointer-events-none">
     </div>
 
     <!-- Top Global Header -->
@@ -40,10 +40,10 @@
 
         <!-- Toolbar controls -->
         <div class="flex items-center gap-2">
-            <!-- Weather Update Button -->
-            <button id="btn-weather-update" class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100">
-                <span>🌤️</span>
-                <span>Weather</span>
+            <!-- Connectivity Toggle Button -->
+            <button id="btn-network-toggle" class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all bg-emerald-50 text-emerald-600 border border-emerald-200">
+                <span id="network-icon">⚡</span>
+                <span id="network-status-text">Online</span>
             </button>
 
             <!-- Language Switcher -->

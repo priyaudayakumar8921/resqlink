@@ -614,15 +614,39 @@ function attachEventHandlers() {
         }
     });
 
-    // Weather Update Button
-    const btnWeather = document.getElementById('btn-weather-update');
-    if (btnWeather) {
-        btnWeather.addEventListener('click', () => {
-            const ticker = document.getElementById('weather-ticker-container');
-            if (ticker) ticker.classList.toggle('hidden');
-            showToast('Weather ticker toggled.', 'info');
-        });
-    }
+    // Network Toggle
+    document.getElementById('btn-network-toggle').addEventListener('click', () => {
+        isOnline = !isOnline;
+        const btn = document.getElementById('btn-network-toggle');
+        const text = document.getElementById('network-status-text');
+        
+        if (isOnline) {
+            btn.className = "px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200";
+            text.textContent = 'Online';
+            
+            if (offlineQueue.length > 0) {
+                setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/reports`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offlineQueue) });
+                        if (res.ok) {
+                            const json = await res.json();
+                            feeds = [...json.data, ...feeds];
+                            stats.totalReports += offlineQueue.length;
+                            stats.confirmedAlerts += offlineQueue.length;
+                            offlineQueue = [];
+                            localStorage.removeItem('resqlink_offline_queue');
+                            updateCountersDisplay(); renderFeeds(); renderWatchlist();
+                            showToast('Offline reports synchronized!', 'success');
+                        }
+                    } catch(e) { showToast('Sync failed', 'warning'); }
+                }, 1000);
+            } else { showToast('Network Online', 'success'); }
+        } else {
+            btn.className = "px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-200";
+            text.textContent = 'Offline';
+            showToast('Device disconnected. Offline mode active.', 'warning');
+        }
+    });
 
     // Report Wizard Logic
     function updateWizard() {
