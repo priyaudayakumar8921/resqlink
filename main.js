@@ -1031,7 +1031,7 @@ function attachEventHandlers() {
                     if(err.code === 2) errMsg = 'Location Unavailable (No GPS signal)'; 
                     if(err.code === 1) alert("⚠️ Location access is blocked. Accurate rescue dispatch requires your live location. Please enable location access in your browser settings for this site.");
                     sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: errMsg }); 
-                }, { timeout: 2000, maximumAge: Infinity, enableHighAccuracy: false });
+                }, { timeout: 5000, maximumAge: Infinity, enableHighAccuracy: false });
             };
 
             if (navigator.geolocation) {

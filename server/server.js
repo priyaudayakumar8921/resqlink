@@ -107,7 +107,7 @@ io.on('connection', (socket) => {
                     message: aiResponse,
                     timestamp: new Date().toISOString()
                 });
-            }, 800); // Slight delay to feel like a real bot typing
+            }, 0); // Respond instantly
 
             // Forward to Control Room via WhatsApp
             if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
