@@ -118,7 +118,7 @@ const t = {
         submitBtn: "Submit Report"
     },
     ml: {
-        title: "രക്ഷാ",
+        title: "Resqlink",
         motto: "കേരള എമർജൻസി റെസിലിയൻസ് നെറ്റ്",
         totalReports: "ആകെ റിപ്പോർട്ടുകൾ",
         confirmedAlerts: "സ്ഥിരീകരിച്ച അലർട്ടുകൾ",
