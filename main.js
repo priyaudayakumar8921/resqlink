@@ -282,7 +282,20 @@ function populateDropdowns() {
 
 function initMap() {
     // Initialize Leaflet centered on Kerala
-    mapInstance = L.map('map-canvas-container').setView([10.8505, 76.2711], 7);
+    mapInstance = L.map('map-canvas-container', {
+        scrollWheelZoom: false // Disable zoom on normal page scrolling
+    }).setView([10.8505, 76.2711], 7);
+    
+    // Enable scroll zoom only after user explicitly interacts/clicks the map
+    mapInstance.on('click', () => {
+        if (!mapInstance.scrollWheelZoom.enabled()) {
+            mapInstance.scrollWheelZoom.enable();
+        }
+    });
+    // Optional: disable it again if they move the mouse away to restore page scrolling
+    mapInstance.on('mouseout', () => {
+        mapInstance.scrollWheelZoom.disable();
+    });
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap',
