@@ -990,11 +990,32 @@ function attachEventHandlers() {
             const rawMessage = input.value.trim();
             input.value = '';
             
-            if (navigator.geolocation) {
+            const fetchLocationAndEmit = () => {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
                     sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: loc });
-                }, (err) => { let errMsg = 'Location Denied'; if(err.code === 3) errMsg = 'Location Timeout (Took too long)'; if(err.code === 2) errMsg = 'Location Unavailable (No GPS signal)'; sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: errMsg }); }, { timeout: 15000, maximumAge: 10000 });
+                }, (err) => { 
+                    let errMsg = 'Location Denied'; 
+                    if(err.code === 3) errMsg = 'Location Timeout (Took too long)'; 
+                    if(err.code === 2) errMsg = 'Location Unavailable (No GPS signal)'; 
+                    if(err.code === 1) alert("⚠️ Location access is blocked. Accurate rescue dispatch requires your live location. Please enable location access in your browser settings for this site.");
+                    sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: errMsg }); 
+                }, { timeout: 15000, maximumAge: 10000 });
+            };
+
+            if (navigator.geolocation) {
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+                        if (result.state === 'prompt') {
+                            alert("⚠️ To dispatch rescue teams accurately, we need your live location. Please select 'Allow' on the next prompt.");
+                        } else if (result.state === 'denied') {
+                            alert("⚠️ Location access is blocked. Accurate rescue dispatch requires your live location. Please enable location access in your browser settings for this site.");
+                        }
+                        fetchLocationAndEmit();
+                    }).catch(() => fetchLocationAndEmit());
+                } else {
+                    fetchLocationAndEmit();
+                }
             } else {
                 sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: 'Location Unsupported' });
             }

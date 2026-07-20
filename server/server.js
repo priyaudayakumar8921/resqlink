@@ -7,6 +7,7 @@ const apiRoutes = require('./routes/api');
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
+const compression = require('compression');
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -19,6 +20,7 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
