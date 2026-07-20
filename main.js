@@ -283,7 +283,9 @@ function populateDropdowns() {
 function initMap() {
     // Initialize Leaflet centered on Kerala
     mapInstance = L.map('map-canvas-container', {
-        scrollWheelZoom: false // Disable zoom on normal page scrolling
+        scrollWheelZoom: false, // Disable zoom on normal page scrolling
+        dragging: !L.Browser.mobile, // Disable one-finger pan on mobile to allow page scroll
+        tap: !L.Browser.mobile // Fix click issues on mobile when dragging disabled
     }).setView([10.8505, 76.2711], 7);
     
     // Enable scroll zoom only after user explicitly interacts/clicks the map
