@@ -1026,7 +1026,8 @@ function attachEventHandlers() {
         });
     }
     // Modals
-    document.getElementById('btn-info-modal').addEventListener('click', () => document.getElementById('info-modal-backdrop').classList.remove('hidden'));
+    const infoBtn = document.getElementById('btn-info-modal');
+    if (infoBtn) infoBtn.addEventListener('click', () => document.getElementById('info-modal-backdrop').classList.remove('hidden'));
     document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('info-modal-backdrop').classList.add('hidden'));
 }
 
