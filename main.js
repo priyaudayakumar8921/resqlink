@@ -181,7 +181,7 @@ function updateLanguageTexts() {
 
 
 // --- ON LOAD INITIALIZATION ---
-window.onload = async function () {
+(async function initApp() {
     const cachedQueue = localStorage.getItem('resqlink_offline_queue');
     if (cachedQueue) {
         offlineQueue = JSON.parse(cachedQueue);
@@ -241,7 +241,7 @@ window.onload = async function () {
     } catch(e) {
         console.error("Backend offline", e);
     }
-};
+})();
 
 function renderWeatherAlerts() {
     const container = document.getElementById('weather-ticker-container');
