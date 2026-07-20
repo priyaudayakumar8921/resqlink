@@ -81,10 +81,13 @@ document.getElementById('btn-refresh-reports').addEventListener('click', () => {
 
 // Fetch and Render Reports
 async function fetchReports() {
+    const cached = localStorage.getItem('admin_cached_reports');
+    if (cached) { try { renderReports(JSON.parse(cached)); } catch(e){} }
     try {
         const res = await fetch(`${API_BASE_URL}/api/reports`);
         if (res.ok) {
             const data = await res.json();
+            localStorage.setItem('admin_cached_reports', JSON.stringify(data));
             renderReports(data);
         }
     } catch (err) {
@@ -133,72 +136,81 @@ function renderReports(reports) {
 
 // Fetch and Render Subscribers
 async function fetchSubscribers() {
+    const cached = localStorage.getItem('admin_cached_subscribers');
+    if (cached) { try { renderSubscribers(JSON.parse(cached)); } catch(e){} }
     try {
         const res = await fetch(`${API_BASE_URL}/api/subscribers`);
         if (res.ok) {
             const data = await res.json();
-            document.getElementById('subscriber-count').textContent = `${data.length} Total`;
-            
-            const list = document.getElementById('subscribers-list');
-            list.innerHTML = '';
-            
-            data.forEach(s => {
-                const isPending = s.status !== 'Approved';
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="flex justify-between items-center p-2 bg-slate-50 rounded border border-slate-100 mb-2">
-                        <div>
-                            <span class="font-mono text-sm text-slate-700 block">${s.phone || 'No phone provided'}</span>
-                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 rounded mt-1 inline-block">${s.district}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            ${isPending ? `<button onclick="approveSubscriber('${s._id}')" class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded text-[10px] font-bold uppercase transition-colors">Approve</button>` : `<span class="text-[10px] text-emerald-600 font-bold uppercase flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Approved</span>`}
-                            <button onclick="deleteSubscriber('${s._id}')" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold uppercase transition-colors">Reject</button>
-                        </div>
-                    </div>
-                `);
-            });
+            localStorage.setItem('admin_cached_subscribers', JSON.stringify(data));
+            renderSubscribers(data);
         }
     } catch (err) {
         console.error('Failed to fetch subscribers', err);
     }
 }
 
+function renderSubscribers(data) {
+    document.getElementById('subscriber-count').textContent = `${data.length} Total`;
+    const list = document.getElementById('subscribers-list');
+    list.innerHTML = '';
+    data.forEach(s => {
+        const isPending = s.status !== 'Approved';
+        list.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-between items-center p-2 bg-slate-50 rounded border border-slate-100 mb-2">
+                <div>
+                    <span class="font-mono text-sm text-slate-700 block">${s.phone || 'No phone provided'}</span>
+                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 rounded mt-1 inline-block">${s.district}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    ${isPending ? `<button onclick="approveSubscriber('${s._id}')" class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded text-[10px] font-bold uppercase transition-colors">Approve</button>` : `<span class="text-[10px] text-emerald-600 font-bold uppercase flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Approved</span>`}
+                    <button onclick="deleteSubscriber('${s._id}')" class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold uppercase transition-colors">Reject</button>
+                </div>
+            </div>
+        `);
+    });
+}
+
 // Fetch and Render Volunteers
 async function fetchVolunteers() {
+    const cached = localStorage.getItem('admin_cached_volunteers');
+    if (cached) { try { renderVolunteers(JSON.parse(cached)); } catch(e){} }
     try {
         const res = await fetch(`${API_BASE_URL}/api/volunteers`);
         if (res.ok) {
             const data = await res.json();
-            document.getElementById('volunteer-count').textContent = `${data.length} Total`;
-            
-            const list = document.getElementById('volunteers-list');
-            list.innerHTML = '';
-            
-            if(data.length === 0) {
-                list.innerHTML = '<div class="text-xs text-slate-500">No volunteers registered yet.</div>';
-            }
-
-            data.forEach(v => {
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <span class="font-bold text-sm text-primary block">${v.name}</span>
-                                <span class="font-mono text-xs text-slate-500">${v.phone}</span>
-                            </div>
-                            <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 rounded-full border border-emerald-200">${v.district}</span>
-                        </div>
-                        <div class="text-xs text-slate-600 space-y-1 mt-2">
-                            <p><strong>Skills:</strong> ${v.skills || 'None'}</p>
-                            <p><strong>Eqpt:</strong> ${v.equipment || 'None'}</p>
-                        </div>
-                    </div>
-                `);
-            });
+            localStorage.setItem('admin_cached_volunteers', JSON.stringify(data));
+            renderVolunteers(data);
         }
     } catch (err) {
         console.error('Failed to fetch volunteers', err);
     }
+}
+
+function renderVolunteers(data) {
+    document.getElementById('volunteer-count').textContent = `${data.length} Total`;
+    const list = document.getElementById('volunteers-list');
+    list.innerHTML = '';
+    if(data.length === 0) {
+        list.innerHTML = '<div class="text-xs text-slate-500">No volunteers registered yet.</div>';
+    }
+    data.forEach(v => {
+        list.insertAdjacentHTML('beforeend', `
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="font-bold text-sm text-primary block">${v.name}</span>
+                        <span class="font-mono text-xs text-slate-500">${v.phone}</span>
+                    </div>
+                    <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 rounded-full border border-emerald-200">${v.district}</span>
+                </div>
+                <div class="text-xs text-slate-600 space-y-1 mt-2">
+                    <p><strong>Skills:</strong> ${v.skills || 'None'}</p>
+                    <p><strong>Eqpt:</strong> ${v.equipment || 'None'}</p>
+                </div>
+            </div>
+        `);
+    });
 }
 
 // Global Actions (Exposed to window for inline onclicks)
