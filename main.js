@@ -182,12 +182,36 @@ function updateLanguageTexts() {
 
 // --- ON LOAD INITIALIZATION ---
 window.onload = async function () {
-    const cached = localStorage.getItem('resqlink_offline_queue');
-    if (cached) {
-        offlineQueue = JSON.parse(cached);
-        updateCountersDisplay();
+    const cachedQueue = localStorage.getItem('resqlink_offline_queue');
+    if (cachedQueue) {
+        offlineQueue = JSON.parse(cachedQueue);
     }
 
+    // STALE-WHILE-REVALIDATE: Load instantly from cache
+    const cachedData = localStorage.getItem('resqlink_cached_data');
+    if (cachedData) {
+        try {
+            const p = JSON.parse(cachedData);
+            if (p.stats) stats = p.stats;
+            if (p.feeds) feeds = p.feeds;
+            if (p.resources) resources = p.resources;
+            if (p.weatherAlerts) weatherAlerts = p.weatherAlerts;
+            if (p.reliefCamps) reliefCamps = p.reliefCamps;
+            
+            initMap();
+            renderFeeds(); renderResources(); renderWatchlist(); 
+            renderWeatherAlerts(); updateCountersDisplay();
+        } catch(e) { initMap(); }
+    } else {
+        initMap(); // Needs map container initialized at least
+    }
+
+    attachEventHandlers();
+    populateDropdowns();
+    updateLanguageTexts();
+    updateCountersDisplay();
+
+    // Fetch fresh data in the background (waits for Render cold start)
     try {
         const [statsRes, feedsRes, resourcesRes, weatherRes, campsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/api/stats`),
@@ -202,20 +226,21 @@ window.onload = async function () {
         if (resourcesRes.ok) resources = await resourcesRes.json();
         if (weatherRes.ok) weatherAlerts = await weatherRes.json();
         if (campsRes.ok) reliefCamps = await campsRes.json();
+        
+        localStorage.setItem('resqlink_cached_data', JSON.stringify({
+            stats, feeds, resources, weatherAlerts, reliefCamps
+        }));
+
+        // Silently update UI with fresh data
+        renderFeeds();
+        renderResources();
+        renderWatchlist();
+        renderWeatherAlerts();
+        updateCountersDisplay();
+        plotFeedsOnMap(); // updates map markers
     } catch(e) {
         console.error("Backend offline", e);
     }
-
-    initMap();
-    renderFeeds();
-    renderResources();
-    renderWatchlist();
-    renderWeatherAlerts();
-    attachEventHandlers();
-    updateCountersDisplay();
-    populateDropdowns();
-    updateLanguageTexts();
-
 };
 
 function renderWeatherAlerts() {
@@ -583,45 +608,21 @@ function attachEventHandlers() {
                 }
             }, (error) => {
                 showToast("Location access denied.", "warning");
-            });
+            }, { timeout: 2000, maximumAge: Infinity, enableHighAccuracy: false });
         } else {
             showToast("Geolocation not supported.", "warning");
         }
     });
 
-    // Network Toggle
-    document.getElementById('btn-network-toggle').addEventListener('click', () => {
-        isOnline = !isOnline;
-        const btn = document.getElementById('btn-network-toggle');
-        const text = document.getElementById('network-status-text');
-        
-        if (isOnline) {
-            btn.className = "px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200";
-            text.textContent = 'Online';
-            
-            if (offlineQueue.length > 0) {
-                setTimeout(async () => {
-                    try {
-                        const res = await fetch(`${API_BASE_URL}/api/reports`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offlineQueue) });
-                        if (res.ok) {
-                            const json = await res.json();
-                            feeds = [...json.data, ...feeds];
-                            stats.totalReports += offlineQueue.length;
-                            stats.confirmedAlerts += offlineQueue.length;
-                            offlineQueue = [];
-                            localStorage.removeItem('resqlink_offline_queue');
-                            updateCountersDisplay(); renderFeeds(); renderWatchlist();
-                            showToast('Offline reports synchronized!', 'success');
-                        }
-                    } catch(e) { showToast('Sync failed', 'warning'); }
-                }, 1000);
-            } else { showToast('Network Online', 'success'); }
-        } else {
-            btn.className = "px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-200";
-            text.textContent = 'Offline';
-            showToast('Device disconnected. Offline mode active.', 'warning');
-        }
-    });
+    // Weather Update Button
+    const btnWeather = document.getElementById('btn-weather-update');
+    if (btnWeather) {
+        btnWeather.addEventListener('click', () => {
+            const ticker = document.getElementById('weather-ticker-container');
+            if (ticker) ticker.classList.toggle('hidden');
+            showToast('Weather ticker toggled.', 'info');
+        });
+    }
 
     // Report Wizard Logic
     function updateWizard() {
@@ -710,7 +711,7 @@ function attachEventHandlers() {
         }, (error) => {
             btn.innerHTML = originalText;
             showToast("Failed to get location: " + error.message, "error");
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        }, { timeout: 2000, maximumAge: Infinity, enableHighAccuracy: false });
     });
 
     let mediaStream = null;
@@ -1000,7 +1001,7 @@ function attachEventHandlers() {
                     if(err.code === 2) errMsg = 'Location Unavailable (No GPS signal)'; 
                     if(err.code === 1) alert("⚠️ Location access is blocked. Accurate rescue dispatch requires your live location. Please enable location access in your browser settings for this site.");
                     sosSocket.emit('sos-message', { sender: 'Victim in Distress', role: 'User', message: rawMessage, location: errMsg }); 
-                }, { timeout: 15000, maximumAge: 10000 });
+                }, { timeout: 2000, maximumAge: Infinity, enableHighAccuracy: false });
             };
 
             if (navigator.geolocation) {

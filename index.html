@@ -19,7 +19,7 @@
     </div>
 
     <!-- Top Global Header -->
-    <header class="sticky top-0 z-40 bg-white border-b border-borderBlue px-4 py-3 flex items-center justify-between shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
+    <header class="sticky top-0 z-40 bg-white border-b border-borderBlue px-6 py-5 flex items-center justify-between shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
         <div class="flex items-center gap-2">
             <div class="p-2 bg-primary rounded-2xl text-white shadow-[0_8px_30px_rgb(56,25,50,0.06)]">
                 <!-- Shield Icon -->
@@ -40,10 +40,10 @@
 
         <!-- Toolbar controls -->
         <div class="flex items-center gap-2">
-            <!-- Connectivity Toggle Button -->
-            <button id="btn-network-toggle" class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all bg-emerald-50 text-emerald-600 border border-emerald-200">
-                <span id="network-icon">⚡</span>
-                <span id="network-status-text">Online</span>
+            <!-- Weather Update Button -->
+            <button id="btn-weather-update" class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100">
+                <span>🌤️</span>
+                <span>Weather</span>
             </button>
 
             <!-- Language Switcher -->
@@ -403,7 +403,7 @@
         </div>
 
         <!-- Right Sidebar (Watchlist) -->
-        <div class="hidden md:flex w-[320px] lg:w-[360px] border-l border-borderBlue p-4 flex-col space-y-4 bg-white z-20">
+        <div class="flex w-full md:w-[320px] lg:w-[360px] md:border-l border-borderBlue p-4 flex-col space-y-4 bg-white z-20">
             <div class="bg-blue-50 border border-blue-100 rounded-3xl p-4 flex flex-col gap-3">
                 <div class="flex items-center gap-3">
                     <span class="text-2xl">📻</span>
