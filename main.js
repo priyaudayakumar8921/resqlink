@@ -708,13 +708,13 @@ function attachEventHandlers() {
                 document.getElementById('input-coords-village').value = "Acquired Offline (GPS)";
             }
             
-            btn.innerHTML = originalText;
-            showToast("Exact GPS Location Acquired!", "success");
+            btn.innerHTML = `<span class="text-emerald-500 font-bold">✔️ Location Acquired!</span>`;
+            setTimeout(() => { btn.innerHTML = originalText; }, 3000);
             
         }, (error) => {
-            btn.innerHTML = originalText;
-            showToast("Failed to get location: " + error.message, "error");
-        }, { timeout: 2000, maximumAge: Infinity, enableHighAccuracy: false });
+            btn.innerHTML = `<span class="text-red-500 font-bold">❌ Failed to locate</span>`;
+            setTimeout(() => { btn.innerHTML = originalText; }, 3000);
+        }, { timeout: 6000, maximumAge: Infinity, enableHighAccuracy: false });
     });
 
     let mediaStream = null;
