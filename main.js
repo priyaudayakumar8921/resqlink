@@ -390,19 +390,7 @@ window.navigateTo = function(screenId) {
 };
 
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toastId = 'toast-' + Date.now();
-    let borderClass = 'border-blue-200 bg-white text-primary';
-    if (type === 'success') borderClass = 'border-emerald-200 bg-emerald-50 text-emerald-700';
-    if (type === 'warning') borderClass = 'border-amber-200 bg-amber-50 text-amber-700';
-
-    const toastHtml = `
-      <div id="${toastId}" class="animate-slide-in p-3 rounded-lg shadow-xl flex items-center gap-3 border ${borderClass}">
-        <span class="text-sm font-bold flex-1">${message}</span>
-        <button onclick="document.getElementById('${toastId}').remove()" class="text-slate-400 font-bold">✕</button>
-      </div>`;
-    container.insertAdjacentHTML('beforeend', toastHtml);
-    setTimeout(() => { const el = document.getElementById(toastId); if (el) el.remove(); }, 3500);
+    // Popups completely disabled as requested by user
 }
 
 function updateCountersDisplay() {
@@ -563,60 +551,30 @@ function attachEventHandlers() {
 
     // Audio Forecast Stream
     document.getElementById('btn-voice-toggle').addEventListener('click', () => {
-        showToast("Fetching location and weather...", "info");
-        
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                try {
-                    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-                    const data = await res.json();
-                    
-                    if (data && data.current_weather) {
-                        const temp = data.current_weather.temperature;
-                        const windspeed = data.current_weather.windspeed;
-                        
-                        const engForecast = `Attention. Based on your current location, the temperature is ${temp} degrees Celsius with a wind speed of ${windspeed} kilometers per hour. Stay alert and stay safe.`;
-                        const malForecast = `ശ്രദ്ധിക്കുക. നിങ്ങളുടെ നിലവിലെ സ്ഥലം അനുസരിച്ച്, താപനില ${temp} ഡിഗ്രി സെൽഷ്യസും കാറ്റിന്റെ വേഗത മണിക്കൂറിൽ ${windspeed} കിലോമീറ്ററുമാണ്. സുരക്ഷിതരായിരിക്കുക.`;
-                        
-                        showToast("Playing live forecast...", "info");
-                        
-                        if (window.speechSynthesis) {
-                            window.speechSynthesis.cancel();
-                            if(currentLang === 'en') {
-                                const u = new SpeechSynthesisUtterance(engForecast);
-                                u.lang = 'en-US';
-                                u.rate = 0.9;
-                                window.speechSynthesis.speak(u);
-                            } else {
-                                const u = new SpeechSynthesisUtterance(malForecast);
-                                u.lang = 'ml-IN';
-                                u.rate = 0.9;
-                                window.speechSynthesis.speak(u);
-                            }
-                        }
-                    } else {
-                        throw new Error("Invalid data");
-                    }
-                } catch(e) {
-                    showToast("Failed to fetch weather data.", "warning");
-                    // Fallback to default
-                    const defaultEng = `Attention. Current tactical focus is ${selectedDistrict}. Expect heavy rainfall over the next 24 hours.`;
-                    const defaultMal = `ശ്രദ്ധിക്കുക. നിലവിലെ ശ്രദ്ധാകേന്ദ്രം ${selectedDistrict} ആണ്. അടുത്ത ഇരുപത്തി നാല് മണിക്കൂറിൽ ശക്തമായ മഴയ്ക്ക് സാധ്യതയുണ്ട്.`;
-                    if (window.speechSynthesis) {
-                        window.speechSynthesis.cancel();
-                        const u = new SpeechSynthesisUtterance(currentLang === 'en' ? defaultEng : defaultMal);
-                        u.lang = currentLang === 'en' ? 'en-US' : 'ml-IN';
-                        u.rate = 0.9;
-                        window.speechSynthesis.speak(u);
-                    }
-                }
-            }, (error) => {
-                showToast("Location access denied.", "warning");
-            }, { timeout: 2000, maximumAge: Infinity, enableHighAccuracy: false });
+        // INSTANT RADIO PLAYBACK (No GPS or API wait)
+        let alertMessage = "";
+        if (weatherAlerts && weatherAlerts.length > 0) {
+            const worstAlert = weatherAlerts[0];
+            const engAlert = `A ${worstAlert.level} alert is active in ${worstAlert.district}. ${worstAlert.message}.`;
+            const malAlert = `${worstAlert.district} ജില്ലയിൽ ${worstAlert.level} അലർട്ട് പ്രഖ്യാപിച്ചിട്ടുണ്ട്.`;
+            alertMessage = currentLang === 'en' ? engAlert : malAlert;
         } else {
-            showToast("Geolocation not supported.", "warning");
+            const engAlert = "Currently, there are no severe weather warnings. Stay alert.";
+            const malAlert = "നിലവിൽ ഗുരുതരമായ കാലാവസ്ഥാ മുന്നറിയിപ്പുകളൊന്നുമില്ല. ജാഗ്രത പാലിക്കുക.";
+            alertMessage = currentLang === 'en' ? engAlert : malAlert;
+        }
+
+        const engIntro = `Welcome to the Resqlink Emergency Broadcast. `;
+        const malIntro = `റെസ്‌ക്യുലിങ്ക് അടിയന്തര ബ്രോഡ്കാസ്റ്റിലേക്ക് സ്വാഗതം. `;
+        
+        const finalMessage = (currentLang === 'en' ? engIntro : malIntro) + alertMessage;
+        
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(finalMessage);
+            u.lang = currentLang === 'en' ? 'en-US' : 'ml-IN';
+            u.rate = 0.9;
+            window.speechSynthesis.speak(u);
         }
     });
 
